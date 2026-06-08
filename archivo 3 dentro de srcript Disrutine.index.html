@@ -1,0 +1,50 @@
+async function setupPushNotifications() {
+    if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+        console.log('Push no soportado');
+        return;
+    }
+    
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+        console.log('Permiso denegado');
+        return;
+    }
+    
+    const registration = await navigator.serviceWorker.register('/sw.js');
+    console.log('Service Worker registrado');
+    
+    let subscription = await registration.pushManager.getSubscription();
+    if (!subscription) {
+        const publicKey = 'BEl62iUYxuUx5xLkZG8VZjF4K5K6cPK6B8kHYw6K5K6cPK6B8kHYw6K5K6cPK6B8kHYw6K5K6cPK6B8kHYw6K5K6cPK6B8kHYw6K5K6cP'; // VAPID key demo
+        subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: publicKey
+        });
+        console.log('Suscripción creada');
+    }
+}
+
+function scheduleReminder(titulo, mensaje, hora) {
+    // Calcula los milisegundos hasta la hora objetivo
+    const ahora = new Date();
+    const objetivo = new Date();
+    objetivo.setHours(hora.split(':')[0], hora.split(':')[1], 0, 0);
+    if (objetivo <= ahora) objetivo.setDate(objetivo.getDate() + 1);
+    const tiempoEspera = objetivo - ahora;
+    
+    setTimeout(() => {
+        if (Notification.permission === 'granted') {
+            navigator.serviceWorker.ready.then(registration => {
+                registration.showNotification(titulo, {
+                    body: mensaje,
+                    icon: '/icon-192.png',
+                    badge: '/icon-192.png',
+                    vibrate: [200, 100, 200],
+                    requireInteraction: true
+                });
+            });
+        }
+    }, tiempoEspera);
+    
+    console.log(`Recordatorio programado para ${objetivo.toLocaleTimeString()}`);
+}
