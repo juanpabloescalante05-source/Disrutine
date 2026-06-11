@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#7c3aed">
+  <link rel="manifest" href="manifest.json">
+  <title>JARVIS Pro - Vida Total</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --bg:#0a0a0f;--bg2:#12121a;--bg3:#1a1a26;--bg4:#22223a;
+      --acc1:#7c3aed;--acc2:#06b6d4;--acc3:#f59e0b;--acc4:#10b981;--acc5:#f43f5e;
+      --txt:#f8fafc;--txt2:#94a3b8;--txt3:#64748b;
+      --card:rgba(255,255,255,0.04);--border:rgba(255,255,255,0.08);
+      --r:16px;--rs:10px;
+    }
+    body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;overflow-x:hidden;font-size:15px}
+    #canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;opacity:0.3;pointer-events:none}
+    #app{position:relative;z-index:1;max-width:500px;margin:0 auto;min-height:100vh;padding-bottom:70px}
+    .sync-badge{position:fixed;bottom:72px;right:12px;z-index:500;background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:5px 10px;font-size:10px;display:flex;align-items:center;gap:5px}
+    .sync-dot{width:6px;height:6px;border-radius:50%;background:var(--acc4)}
+    header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);backdrop-filter:blur(20px);position:sticky;top:0;z-index:100}
+    .logo{font-family:monospace;font-size:18px;font-weight:700;background:linear-gradient(135deg,var(--acc1),var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .hbtn{background:linear-gradient(135deg,var(--acc1),var(--acc5));border:none;border-radius:50%;width:38px;height:38px;cursor:pointer;font-size:16px}
+    nav{display:flex;gap:5px;padding:8px 12px;overflow-x:auto;border-bottom:1px solid var(--border);background:rgba(10,10,15,0.9);position:sticky;top:60px;z-index:99}
+    .nb{border:1px solid var(--border);background:transparent;color:var(--txt2);border-radius:20px;padding:5px 12px;font-size:11px;cursor:pointer;white-space:nowrap}
+    .nb.active{background:var(--acc1);border-color:var(--acc1);color:#fff}
+    main{flex:1;padding:12px;display:flex;flex-direction:column;gap:12px}
+    .view{display:none}.view.active{display:flex;flex-direction:column;gap:12px}
+    .st{font-size:18px;font-weight:700;margin-bottom:4px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;backdrop-filter:blur(10px)}
+    .ct{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--txt3);margin-bottom:10px}
+    .solar-banner{display:flex;justify-content:space-around;background:linear-gradient(135deg,rgba(124,58,237,0.15),rgba(6,182,212,0.1));border-radius:12px;padding:10px;margin-bottom:8px}
+    .solar-item{text-align:center}
+    .solar-val{font-size:14px;font-weight:700;font-family:monospace;color:var(--acc2)}
+    .mb{border-radius:var(--r);background:linear-gradient(135deg,rgba(124,58,237,0.2),rgba(6,182,212,0.1));padding:14px}
+    .mt{font-size:13px;line-height:1.5;font-style:italic}
+    .dp{display:flex;align-items:center;gap:15px}
+    .rw{position:relative;width:80px;height:80px;flex-shrink:0}
+    .rc{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column}
+    .rpct{font-size:18px;font-weight:700}
+    .sr{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)}
+    .hi{display:flex;align-items:center;gap:10px;padding:8px;background:rgba(255,255,255,0.03);border-radius:12px;margin-bottom:5px;cursor:pointer}
+    .hi.done{border-left:3px solid var(--acc4)}
+    .hch{width:20px;height:20px;border-radius:50%;border:2px solid var(--txt3);display:flex;align-items:center;justify-content:center;font-size:10px}
+    .hi.done .hch{background:var(--acc4);border-color:var(--acc4);color:#fff}
+    .hbar{height:4px;background:var(--bg4);border-radius:4px;margin-top:8px}
+    .hbf{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--acc1),var(--acc2));transition:width 0.3s}
+    .tt{font-family:monospace;font-size:42px;font-weight:700;text-align:center;margin:10px 0}
+    .tctrl{display:flex;gap:8px;justify-content:center}
+    .tbtn{border:1px solid var(--border);background:var(--card);color:var(--txt);border-radius:10px;padding:8px 16px;cursor:pointer}
+    .tbtn.p{background:var(--acc1)}
+    .cgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+    .cdn{text-align:center;font-size:10px;color:var(--txt3);padding:4px}
+    .cd{text-align:center;border-radius:8px;padding:6px 2px;font-size:11px;cursor:pointer}
+    .cd.today{background:var(--acc1);color:#fff}
+    .cd.hev::after{content:'•';color:var(--acc3);display:block;font-size:8px}
+    .add-btn{width:100%;background:transparent;border:1px dashed var(--border);color:var(--txt3);border-radius:12px;padding:8px;margin-top:8px;cursor:pointer}
+    .msg{padding:8px 12px;border-radius:12px;font-size:12px;margin-bottom:5px;max-width:90%}
+    .msg.u{background:var(--acc1);color:#fff;align-self:flex-end}
+    .msg.a{background:var(--bg3);color:var(--txt);align-self:flex-start}
+    .air{display:flex;gap:8px;margin-top:8px}
+    .ai-input{flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--txt);border-radius:12px;padding:8px}
+    .sbtn{background:var(--acc1);border:none;border-radius:12px;padding:8px 16px;color:#fff;cursor:pointer}
+    .g-status{font-size:12px;padding:8px;border-radius:10px;margin-top:8px}
+    .mo{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:200;display:flex;align-items:center;justify-content:center}
+    .mc{background:var(--bg2);border-radius:20px;padding:18px;width:90%;max-width:340px}
+    .bc,.bs{padding:6px 12px;border-radius:8px;cursor:pointer}
+    .bs{background:var(--acc1);color:#fff}
+    .jc{display:flex;gap:6px;justify-content:flex-end;margin-top:10px}
+  </style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div class="sync-badge" id="syncBadge"><div class="sync-dot" id="syncDot"></div><span id="syncText">JARVIS activo</span></div>
+<div id="app">
+  <header><div><div class="logo">JARVIS</div><div class="greeting" id="greeting"></div></div><button class="hbtn" id="jarvisBtn">🎙️</button></header>
+  <nav id="nav">
+    <button class="nb active" data-view="hoy">Hoy</button>
+    <button class="nb" data-view="habitos">Hábitos</button>
+    <button class="nb" data-view="rutina">Rutina</button>
+    <button class="nb" data-view="semana">Semana</button>
+    <button class="nb" data-view="timer">Timer</button>
+    <button class="nb" data-view="calendario">Calendario</button>
+    <button class="nb" data-view="objetivos">Objetivos</button>
+    <button class="nb" data-view="fitness">Fitness</button>
+    <button class="nb" data-view="stats">Stats</button>
+    <button class="nb" data-view="google">Google</button>
+    <button class="nb" data-view="jarvisai">IA</button>
+  </nav>
+  <main id="main"></main>
+</div>
+
+<script>
+  // --------------------------------------------------------------
+  // CONFIGURACIÓN GLOBAL
+  // --------------------------------------------------------------
+  const UBICACION = { lat: 40.4992, lon: -3.9646, nombre: "Villanueva del Pardillo" };
+  const GOOGLE_CLIENT_ID = '671271797715-dhki5rmaiv7uhr31pq8mq2252tve1cmn.apps.googleusercontent.com';
+  let accessToken = null;
+
+  // Datos persistentes
+  let data = {
+    habits: { "Oración":{c:false, streak:0}, "Estudio":{c:false, streak:0}, "Ejercicio":{c:false, streak:0}, "Lectura":{c:false, streak:0}, "Emprendimiento":{c:false, streak:0}, "Magia":{c:false, streak:0}, "Higiene bucal":{c:false, streak:0}, "Antebrazo":{c:false, streak:0} },
+    events: [],
+    routine: { Lunes:[], Martes:[], Miercoles:[], Jueves:[], Viernes:[], Sabado:[], Domingo:[] },
+    objectives: { daily:{}, weekly:{}, monthly:{}, quarterly:{} },
+    fitness: { peso:70, cintura:80, pecho:92, brazo:32, entrenamientos:0, suplementos:"" },
+    stats: { sessions: [], lastReset: new Date().toDateString() }
+  };
+  let currentView = 'hoy';
+  let timerInterval = null, timerSeconds = 1500;
+  let recognition = null;
+
+  function loadData() {
+    const saved = localStorage.getItem('jarvis_pro');
+    if(saved) {
+      const parsed = JSON.parse(saved);
+      data = { ...data, ...parsed };
+    }
+    const today = new Date().toDateString();
+    if(data.stats.lastReset !== today) {
+      for(let h in data.habits) data.habits[h].c = false;
+      data.stats.lastReset = today;
+      saveData();
+    }
+    renderAll();
+  }
+  function saveData() { localStorage.setItem('jarvis_pro', JSON.stringify(data)); }
+
+  function getWeekStart(date) {
+    const d = new Date(date);
+    const day = d.getDay();
+    d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+    return d;
+  }
+  function formatDate(d) { return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`; }
+
+  function getSunriseSunset(date) {
+    const n = Math.floor((date - new Date(date.getFullYear(),0,1)) / 86400000);
+    const rad = Math.PI/180;
+    const phi = UBICACION.lat * rad;
+    const decl = 0.4093 * Math.sin(2 * Math.PI / 365 * (n - 81));
+    const cos_omega = -Math.tan(phi) * Math.tan(decl);
+    const omega = Math.acos(Math.min(1, Math.max(-1, cos_omega)));
+    const sunrise = 12 - omega / rad / 15;
+    const sunset = 12 + omega / rad / 15;
+    return { sunrise, sunset };
+  }
+  function formatHour(h) { return `${Math.floor(h)}:${Math.floor((h%1)*60).toString().padStart(2,'0')}`; }
+
+  function renderAll() {
+    renderView(currentView);
+    updateSolarBanner();
+    updateGreeting();
+    updateMotivation();
+  }
+  function updateSolarBanner() {
+    const now = new Date();
+    const sol = getSunriseSunset(now);
+    const sSunrise = document.getElementById('s_sunrise');
+    const sGolden = document.getElementById('s_golden');
+    const sSunset = document.getElementById('s_sunset');
+    const sCirc = document.getElementById('s_circ');
+    if(sSunrise) sSunrise.innerText = formatHour(sol.sunrise);
+    if(sSunset) sSunset.innerText = formatHour(sol.sunset);
+    const hora = now.getHours() + now.getMinutes()/60;
+    const estado = (hora > sol.sunrise && hora < sol.sunset) ? "☀️ Día" : "🌙 Noche";
+    if(sCirc) sCirc.innerText = estado;
+    const golden = sol.sunrise + (sol.sunset - sol.sunrise)*0.3;
+    if(sGolden) sGolden.innerText = formatHour(golden);
+  }
+  function updateGreeting() {
+    const h = new Date().getHours();
+    let saludo = h<12?"🌅 Buenos días": h<19?"☀️ Buenas tardes":"🌙 Buenas noches";
+    const g = document.getElementById('greeting');
+    if(g) g.innerHTML = `${saludo}, Juan Pablo`;
+  }
+  function updateMotivation() {
+    const frases = ["La disciplina vence al talento", "Un día a la vez", "Reza y trabaja", "Tú puedes"];
+    const mt = document.getElementById('motiveText');
+    if(mt) mt.innerHTML = frases[Math.floor(Math.random()*frases.length)];
+  }
+
+  function renderView(view) {
+    const main = document.getElementById('main');
+    if(!main) return;
+    if(view === 'hoy') main.innerHTML = renderHoy();
+    else if(view === 'habitos') main.innerHTML = renderHabitos();
+    else if(view === 'rutina') main.innerHTML = renderRutina();
+    else if(view === 'semana') main.innerHTML = renderSemana();
+    else if(view === 'timer') main.innerHTML = renderTimer();
+    else if(view === 'calendario') main.innerHTML = renderCalendario();
+    else if(view === 'objetivos') main.innerHTML = renderObjetivos();
+    else if(view === 'fitness') main.innerHTML = renderFitness();
+    else if(view === 'stats') main.innerHTML = renderStats();
+    else if(view === 'google') main.innerHTML = renderGoogle();
+    else if(view === 'jarvisai') main.innerHTML = renderIA();
+    attachViewEvents(view);
+  }
+
+  function renderHoy() {
+    let done = Object.values(data.habits).filter(h=>h.c).length;
+    let total = Object.keys(data.habits).length;
+    let pct = total===0?0:(done/total)*100;
+    let streak = Math.max(...Object.values(data.habits).map(h=>h.streak));
+    const circumference = 213.6;
+    const offset = circumference * (1 - pct/100);
+    return `
+      <div class="st">📅 ${new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})}</div>
+      <div class="solar-banner" id="solarBanner">
+        <div class="solar-item"><div class="solar-val" id="s_sunrise">--:--</div><div class="solar-label">Amanecer</div></div>
+        <div class="solar-item"><div class="solar-val" id="s_golden">--:--</div><div class="solar-label">Hora dorada</div></div>
+        <div class="solar-item"><div class="solar-val" id="s_sunset">--:--</div><div class="solar-label">Atardecer</div></div>
+        <div class="solar-item"><div class="solar-val" id="s_circ">--</div><div class="solar-label">Estado</div></div>
+      </div>
+      <div class="mb card"><div class="mt" id="motiveText">Cargando...</div></div>
+      <div class="card"><div class="ct">Progreso</div><div class="dp"><div class="rw"><svg width="80" height="80"><circle cx="40" cy="40" r="34" fill="none" stroke="#ffffff10" stroke-width="6"/><circle id="pc" cx="40" cy="40" r="34" fill="none" stroke="url(#g)" stroke-width="6" stroke-dasharray="213.6" stroke-dashoffset="${offset}"/><defs><linearGradient id="g"><stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs></svg><div class="rc"><div class="rpct">${Math.round(pct)}%</div></div></div><div class="ds"><div class="sr"><span>✅ Completados</span><span>${done}/${total}</span></div><div class="sr"><span>🔥 Racha máx</span><span>${streak} días</span></div></div></div></div>
+      <div class="card"><div class="ct">Reto del día</div><div class="mt">⚡ ${streak>3?"¡Sigue la racha!": "Cumple al menos 5 hábitos hoy"}</div></div>
+    `;
+  }
+  function renderHabitos() {
+    let html = `<div class="ct">Hábitos diarios</div>`;
+    for(let [name, h] of Object.entries(data.habits)) {
+      html += `<div class="hi ${h.c?'done':''}" data-habit="${name}">
+        <div class="hch">${h.c?'✓':''}</div>
+        <div style="flex:1"><div>${name}</div><div style="font-size:10px">🔥 ${h.streak} días</div></div>
+      </div>`;
+    }
+    let done = Object.values(data.habits).filter(h=>h.c).length;
+    let total = Object.keys(data.habits).length;
+    html += `<div class="hbar"><div class="hbf" style="width:${total===0?0:(done/total)*100}%"></div></div>`;
+    return html;
+  }
+  function renderRutina() { return `<div class="ct">Rutina editable (próximamente)</div><div>Usa la IA para generar tu rutina perfecta</div>`; }
+  function renderSemana() {
+    let hoy = new Date();
+    let inicio = getWeekStart(hoy);
+    let dias = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+    let html = `<div class="ct">Planificación semanal</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;">`;
+    for(let i=0;i<7;i++) {
+      let dia = new Date(inicio);
+      dia.setDate(inicio.getDate()+i);
+      let fechaStr = formatDate(dia);
+      let eventos = data.events.filter(e=>e.date===fechaStr);
+      html += `<div style="background:#1a1a26;border-radius:12px;padding:6px;"><div><strong>${dias[i]}</strong><br>${dia.getDate()}</div>${eventos.map(e=>`<div style="font-size:9px;color:#f59e0b;">📌 ${e.title}</div>`).join('')}<div style="font-size:8px;color:#94a3b8;">📚 Estudio<br>💪 Ejercicio</div></div>`;
+    }
+    html += `</div>`;
+    return html;
+  }
+  function renderTimer() {
+    return `<div class="tt" id="timerDisplay">25:00</div><div class="tctrl"><button class="tbtn" id="pomodoroBtn">🍅 25</button><button class="tbtn" id="shortBreakBtn">☕ 5</button><button class="tbtn p" id="startTimerBtn">Iniciar</button><button class="tbtn" id="stopTimerBtn">Parar</button></div><select id="timerArea" class="asel"><option>Estudio</option><option>Emprendimiento</option><option>Ejercicio</option><option>Lectura</option></select><button id="logSessionBtn" class="add-btn">Guardar sesión</button>`;
+  }
+  function renderCalendario() {
+    return `<div class="ct">Calendario mensual</div><div id="calGrid"></div><button class="add-btn" id="addEventBtn">+ Añadir evento</button>`;
+  }
+  function renderObjetivos() { return `<div class="ct">Objetivos por ámbito (diario/semanal/mensual/trimestral)</div><div>Próximamente edición personalizada. Usa la IA para definir tus metas.</div>`; }
+  function renderFitness() {
+    let f = data.fitness;
+    return `<div class="ct">Seguimiento físico</div><div class="si"><span>Peso</span><span class="st2">${f.peso} kg</span></div><div class="si"><span>Cintura</span><span class="st2">${f.cintura} cm</span></div><div class="si"><span>Pecho</span><span class="st2">${f.pecho} cm</span></div><div class="si"><span>Brazo</span><span class="st2">${f.brazo} cm</span></div><div class="si"><span>Entrenamientos semana</span><span class="st2">${f.entrenamientos}</span></div><button id="editFitnessBtn" class="add-btn">Editar medidas</button>`;
+  }
+  function renderStats() {
+    let sessions = data.stats.sessions.length;
+    let totalTime = data.stats.sessions.reduce((a,b)=>a+(b.duration||0),0);
+    return `<div class="ct">Estadísticas</div><div class="sr"><span>🎯 Sesiones Pomodoro</span><span>${sessions}</span></div><div class="sr"><span>⏱️ Tiempo total</span><span>${Math.floor(totalTime/60)}h ${totalTime%60}m</span></div><div class="sr"><span>🔥 Racha más larga</span><span>${Math.max(...Object.values(data.habits).map(h=>h.streak))}</span></div>`;
+  }
+  function renderGoogle() {
+    return `<div class="ct">Google Calendar</div><div><label>Client ID:</label><input type="text" id="googleClientId" value="${GOOGLE_CLIENT_ID}" style="width:100%;margin-bottom:8px" placeholder="Pega tu Client ID"></div><button id="connectGoogleBtn" class="add-btn">🔐 Conectar con Google</button><button id="syncGoogleEventsBtn" class="add-btn" disabled>📅 Sincronizar eventos</button><div id="googleStatus" class="g-status"></div>`;
+  }
+  function renderIA() {
+    return `<div class="ct">JARVIS IA - Organizador experto</div><div id="chatMessages" style="max-height:300px;overflow-y:auto;margin-bottom:8px;"></div><div class="air"><input id="chatInput" class="ai-input" placeholder="Ej: Reorganiza mi día con deberes mates, estudiar historia, rosario"><button id="sendChatBtn" class="sbtn">Enviar</button></div>`;
+  }
+
+  function attachViewEvents(view) {
+    if(view === 'habitos') {
+      document.querySelectorAll('.hi').forEach(el => {
+        el.addEventListener('click', () => {
+          let habit = el.getAttribute('data-habit');
+          data.habits[habit].c = !data.habits[habit].c;
+          if(data.habits[habit].c) data.habits[habit].streak++;
+          else data.habits[habit].streak = 0;
+          saveData();
+          renderView('habitos');
+        });
+      });
+    }
+    if(view === 'timer') {
+      const timerDisplay = document.getElementById('timerDisplay');
+      const startBtn = document.getElementById('startTimerBtn');
+      const stopBtn = document.getElementById('stopTimerBtn');
+      const pomo = document.getElementById('pomodoroBtn');
+      const short = document.getElementById('shortBreakBtn');
+      const logBtn = document.getElementById('logSessionBtn');
+      const areaSel = document.getElementById('timerArea');
+      function updateDisplay() { let m=Math.floor(timerSeconds/60), s=timerSeconds%60; if(timerDisplay) timerDisplay.innerText=`${m}:${s<10?'0'+s:s}`; }
+      if(pomo) pomo.onclick = () => { timerSeconds=1500; updateDisplay(); };
+      if(short) short.onclick = () => { timerSeconds=300; updateDisplay(); };
+      if(startBtn) startBtn.onclick = () => { if(timerInterval) clearInterval(timerInterval); timerInterval=setInterval(()=>{if(timerSeconds<=0){clearInterval(timerInterval); alert("Tiempo completado");}else{timerSeconds--; updateDisplay();}},1000); };
+      if(stopBtn) stopBtn.onclick = () => { if(timerInterval) clearInterval(timerInterval); };
+      if(logBtn) logBtn.onclick = () => { let duration = 1500 - timerSeconds; data.stats.sessions.push({area:areaSel?.value||'Estudio', duration, date:new Date().toISOString()}); saveData(); alert("Sesión guardada"); };
+    }
+    if(view === 'calendario') {
+      renderCalendarGrid();
+      const addBtn = document.getElementById('addEventBtn');
+      if(addBtn) addBtn.onclick = () => showAddEventModal();
+    }
+    if(view === 'fitness') {
+      const editBtn = document.getElementById('editFitnessBtn');
+      if(editBtn) editBtn.onclick = () => {
+        let p = prompt("Peso (kg)", data.fitness.peso);
+        let c = prompt("Cintura (cm)", data.fitness.cintura);
+        let pe = prompt("Pecho (cm)", data.fitness.pecho);
+        let b = prompt("Brazo (cm)", data.fitness.brazo);
+        let e = prompt("Entrenamientos esta semana", data.fitness.entrenamientos);
+        if(p) data.fitness.peso = parseFloat(p);
+        if(c) data.fitness.cintura = parseFloat(c);
+        if(pe) data.fitness.pecho = parseFloat(pe);
+        if(b) data.fitness.brazo = parseFloat(b);
+        if(e) data.fitness.entrenamientos = parseInt(e);
+        saveData();
+        renderView('fitness');
+      };
+    }
+    if(view === 'google') {
+      const connectBtn = document.getElementById('connectGoogleBtn');
+      const syncBtn = document.getElementById('syncGoogleEventsBtn');
+      if(connectBtn) connectBtn.onclick = () => {
+        const clientId = document.getElementById('googleClientId')?.value.trim() || GOOGLE_CLIENT_ID;
+        if(!clientId) { alert("Introduce un Client ID válido"); return; }
+        initGoogleAuth(clientId).then(() => { if(syncBtn) syncBtn.disabled = false; });
+      };
+      if(syncBtn) syncBtn.onclick = () => syncEventsToGoogle();
+    }
+    if(view === 'jarvisai') {
+      const sendBtn = document.getElementById('sendChatBtn');
+      const chatInput = document.getElementById('chatInput');
+      if(sendBtn) sendBtn.onclick = () => {
+        let input = chatInput?.value;
+        if(!input) return;
+        addChatMessage(input, 'u');
+        let respuesta = processAI(input);
+        setTimeout(() => addChatMessage(respuesta, 'a'), 200);
+        if(chatInput) chatInput.value = '';
+      };
+    }
+  }
+
+  function renderCalendarGrid() {
+    let today = new Date();
+    let year = today.getFullYear(), month = today.getMonth();
+    let firstDay = new Date(year, month, 1);
+    let startOffset = firstDay.getDay()===0 ? 6 : firstDay.getDay()-1;
+    let daysInMonth = new Date(year, month+1, 0).getDate();
+    let grid = document.getElementById('calGrid');
+    if(!grid) return;
+    grid.innerHTML = '<div class="cdn">Lun</div><div class="cdn">Mar</div><div class="cdn">Mié</div><div class="cdn">Jue</div><div class="cdn">Vie</div><div class="cdn">Sáb</div><div class="cdn">Dom</div>';
+    for(let i=0;i<startOffset;i++) grid.innerHTML += '<div class="cd"></div>';
+    for(let d=1; d<=daysInMonth; d++) {
+      let dateStr = `${year}-${(month+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}`;
+      let hasEvent = data.events.some(e=>e.date===dateStr);
+      let classes = 'cd';
+      if(dateStr === formatDate(today)) classes += ' today';
+      if(hasEvent) classes += ' hev';
+      grid.innerHTML += `<div class="${classes}" data-date="${dateStr}">${d}</div>`;
+    }
+    document.querySelectorAll('.cd[data-date]').forEach(el => {
+      el.addEventListener('click', () => showAddEventModal(el.getAttribute('data-date')));
+    });
+  }
+
+  function showAddEventModal(date = null) {
+    let targetDate = date || formatDate(new Date());
+    let title = prompt("Título del evento (ej: Examen historia, Cumpleaños)", "");
+    if(title) {
+      data.events.push({ id: Date.now(), title, date: targetDate, type: "evento" });
+      saveData();
+      renderCalendarGrid();
+      renderView('semana');
+    }
+  }
+
+  function processAI(text) {
+    let lower = text.toLowerCase();
+    if(lower.includes('reorganiza') || lower.includes('planifica')) {
+      return reorganizarDia(text);
+    }
+    if(lower.includes('rutina')) return "Te sugiero: 6:30 Laudes, 8:00 Estudio, 16:00 Ejercicio, 20:30 Rosario. ¿Quieres que ajuste algo?";
+    if(lower.includes('examen')) return "He registrado tu examen. Recomiendo aumentar estudio 2h diarias 3 días antes. ¿Quieres que lo añada al calendario?";
+    if(lower.includes('gracias')) return "¡A la orden! Estoy para ayudarte. 💪";
+    return "Puedo reorganizar tu día, calcular tiempos, sugerir rutinas o añadir eventos. Dime: 'reorganiza mi día con deberes mates, estudiar historia, rosario'";
+  }
+
+  function reorganizarDia(frase) {
+    let tareas = frase.replace(/reorganiza|planifica mi día|con|:/gi,'').split(/[, y]/).map(s=>s.trim()).filter(s=>s.length>2);
+    let tiempos = { "deberes mates":45, "estudiar historia":60, "latín":45, "rosario":30, "ducharse":15, "cenar":30, "ejercicio":60 };
+    let total = 0;
+    let plan = [];
+    for(let t of tareas) {
+      let dur = tiempos[t] || 30;
+      total += dur;
+      plan.push(`${t}: ${dur} min`);
+    }
+    return `📋 Tareas: ${plan.join(', ')}. ⏱️ Tiempo total: ${Math.floor(total/60)}h ${total%60}min. Te recomiendo empezar a las 16:00. ¿Confirmo?`;
+  }
+
+  function addChatMessage(msg, type) {
+    let container = document.getElementById('chatMessages');
+    if(!container) return;
+    let div = document.createElement('div');
+    div.className = `msg ${type}`;
+    div.innerText = msg;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  async function initGoogleAuth(clientId) {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://apis.google.com/js/api.js';
+      script.onload = () => {
+        gapi.load('client:auth2', async () => {
+          try {
+            await gapi.client.init({ clientId, scope: 'https://www.googleapis.com/auth/calendar' });
+            const auth = gapi.auth2.getAuthInstance();
+            if(!auth.isSignedIn.get()) await auth.signIn();
+            accessToken = auth.currentUser.get().getAuthResponse().access_token;
+            const statusDiv = document.getElementById('googleStatus');
+            if(statusDiv) statusDiv.innerHTML = '✅ Conectado a Google Calendar';
+            resolve();
+          } catch(err) {
+            const statusDiv = document.getElementById('googleStatus');
+            if(statusDiv) statusDiv.innerHTML = '❌ Error: '+err.message;
+            reject(err);
+          }
+        });
+      };
+      document.head.appendChild(script);
+    });
+  }
+
+  async function syncEventsToGoogle() {
+    if(!accessToken) { alert("Conecta primero con Google"); return; }
+    for(let ev of data.events) {
+      const event = {
+        summary: ev.title,
+        start: { dateTime: ev.date+"T10:00:00+02:00", timeZone: "Europe/Madrid" },
+        end: { dateTime: ev.date+"T11:00:00+02:00", timeZone: "Europe/Madrid" }
+      };
+      try {
+        await gapi.client.calendar.events.insert({ calendarId: 'primary', resource: event });
+      } catch(e) { console.error(e); }
+    }
+    alert("Eventos sincronizados con Google Calendar");
+  }
+
+  async function registerSW() {
+    if('serviceWorker' in navigator) {
+      try {
+        await navigator.serviceWorker.register('/sw.js');
+        const permission = await Notification.requestPermission();
+        if(permission === 'granted') scheduleDailyReminders();
+      } catch(e) { console.log("SW error", e); }
+    }
+  }
+  function scheduleDailyReminders() {
+    const reminders = [
+      { time: "06:30", title: "🌅 Buenos días", body: "Hora de levantarte y rezar Laudes" },
+      { time: "16:00", title: "📚 Estudio", body: "Bloque de estudio pomodoro" },
+      { time: "19:00", title: "💪 Ejercicio", body: "Toca entrenar" },
+      { time: "20:30", title: "🙏 Rosario", body: "Momento de oración" }
+    ];
+    reminders.forEach(r => {
+      let [hour, minute] = r.time.split(':');
+      let now = new Date();
+      let target = new Date();
+      target.setHours(parseInt(hour), parseInt(minute), 0, 0);
+      if(target <= now) target.setDate(target.getDate()+1);
+      let delay = target - now;
+      setTimeout(() => {
+        if(Notification.permission === 'granted') {
+          navigator.serviceWorker.ready.then(reg => reg.showNotification(r.title, { body: r.body, icon: '/icon-192.png' }));
+        }
+      }, delay);
+    });
+  }
+
+  function setupNavigation() {
+    document.querySelectorAll('.nb').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        currentView = btn.getAttribute('data-view');
+        renderView(currentView);
+      });
+    });
+  }
+  function setupVoice() {
+    const jarvisBtn = document.getElementById('jarvisBtn');
+    if('webkitSpeechRecognition' in window) {
+      recognition = new webkitSpeechRecognition();
+      recognition.lang = 'es-ES';
+      recognition.continuous = false;
+      recognition.onresult = (event) => {
+        let text = event.results[0][0].transcript;
+        if(text.toLowerCase().includes('jarvis')) {
+          let command = text.replace(/jarvis/i,'').trim();
+          addChatMessage(`🎤 ${command}`, 'u');
+          let resp = processAI(command);
+          addChatMessage(resp, 'a');
+        }
+      };
+      if(jarvisBtn) jarvisBtn.onclick = () => recognition.start();
+    } else if(jarvisBtn) { jarvisBtn.onclick = () => alert("Voz no soportada"); }
+  }
+
+  function init() {
+    loadData();
+    setupNavigation();
+    setupVoice();
+    registerSW();
+    updateSolarBanner();
+    setInterval(updateSolarBanner, 60000);
+    renderView('hoy');
+  }
+  init();
+</script>
+</body>
+</html>
